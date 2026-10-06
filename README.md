@@ -1,38 +1,13 @@
-# GIMX – Experimental Nacon PS4 Authentication Support
+GIMX
+====
 
-Experimental fork of **GIMX** adding support for using a **Nacon Wired Compact Controller** for PS4 authentication.
+[![Build Status](https://travis-ci.com/matlo/GIMX.svg?branch=master)](https://travis-ci.com/matlo/GIMX)
 
-> [!WARNING]
-> This is an experimental modification.
-> It is not an official GIMX release and may contain bugs or compatibility issues.
+GIMX is a free software that allows to use a computer as a hub for your gaming devices. It works on Windows® and GNU/Linux platforms. It is compatible with Playstation® and Xbox® gaming consoles. The connection between the computer and the gaming console is performed using a USB adapter – [get one on the GIMX shop!](https://blog.gimx.fr/product/gimx-adapter/) – or a Bluetooth® dongle (PS3/PS4 only). The capabilities depend on the platform, the connection method, and the gaming platform.
 
-## About
-
-This fork adds experimental PS4 authentication support for:
-
-- **Controller:** Nacon Wired Compact Controller
-- **USB VID:PID:** `146b:0603`
-- **Platform:** PlayStation 4
-- **Base project:** GIMX
-
-The goal of this modification is to allow the Nacon controller to be used as the authentication controller when using GIMX with a PS4.
-
-## Changes
-
-The main modifications are located in:
-
-- `core/controller.c`
-- `core/connectors/usb_con.c`
-
-These changes add the controller-specific handling required for the Nacon Wired Compact Controller and its PS4 authentication process.
-
-## Hardware tested
-
-This modification has been developed/tested with:
-
-**Nacon Wired Compact Controller**
-
-```text
-VID: 146b
-PID: 0603
-VID:PID: 146b:0603
+Links:
+* [Documentation](https://wiki.gimx.fr)  
+* [Source code](https://gimx.fr/source)  
+* [Issue tracker](https://gimx.fr/buglist)  
+* Licence: [GPLv3](https://www.gnu.org/copyleft/gpl.html)  
+* [Donations](https://blog.gimx.fr/give/gimx-donations-current/)
