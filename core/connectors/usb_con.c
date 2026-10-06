@@ -110,6 +110,29 @@ static struct
         .size = DS4_USB_INTERRUPT_PACKET_SIZE
       }
     }
+  },
+  {
+    /* Experimental authentication-only device. Its PC reports are XInput,
+     * so they must not be decoded or forwarded as DualShock 4 reports.
+     * The existing control-transfer path forwards console requests unchanged.
+     */
+    .name = "Nacon Wired Compact (authentication only)",
+    .ids = { .vendor = 0x146b, .product = 0x0603 },
+    .configuration = 1,
+    .endpoints =
+    {
+      .in =
+      {
+        .address = 0x81,
+        .size = 64,
+        .reports = { .nb = 0 }
+      },
+      .out =
+      {
+        .address = 0x02,
+        .size = 64
+      }
+    }
   }, },
   [C_TYPE_T300RS_PS4] =
   { {
@@ -169,6 +192,29 @@ static struct
       {
         .address = DS4_USB_INTERRUPT_ENDPOINT_OUT | USB_DIR_OUT,
         .size = DS4_USB_INTERRUPT_PACKET_SIZE
+      }
+    }
+  },
+  {
+    /* Experimental authentication-only device. Its PC reports are XInput,
+     * so they must not be decoded or forwarded as DualShock 4 reports.
+     * The existing control-transfer path forwards console requests unchanged.
+     */
+    .name = "Nacon Wired Compact (authentication only)",
+    .ids = { .vendor = 0x146b, .product = 0x0603 },
+    .configuration = 1,
+    .endpoints =
+    {
+      .in =
+      {
+        .address = 0x81,
+        .size = 64,
+        .reports = { .nb = 0 }
+      },
+      .out =
+      {
+        .address = 0x02,
+        .size = 64
       }
     }
   }, },
@@ -232,6 +278,29 @@ static struct
       .size = DS4_USB_INTERRUPT_PACKET_SIZE
     }
   }
+  },
+  {
+    /* Experimental authentication-only device. Its PC reports are XInput,
+     * so they must not be decoded or forwarded as DualShock 4 reports.
+     * The existing control-transfer path forwards console requests unchanged.
+     */
+    .name = "Nacon Wired Compact (authentication only)",
+    .ids = { .vendor = 0x146b, .product = 0x0603 },
+    .configuration = 1,
+    .endpoints =
+    {
+      .in =
+      {
+        .address = 0x81,
+        .size = 64,
+        .reports = { .nb = 0 }
+      },
+      .out =
+      {
+        .address = 0x02,
+        .size = 64
+      }
+    }
   }, },
   [C_TYPE_360_PAD] =
   { {
@@ -486,7 +555,8 @@ int usb_poll_interrupts() {
       status = -1;
       continue;
     }
-    if (state->usb_device != NULL && state->ack) {
+    if (state->usb_device != NULL && state->ack
+        && controller[state->type][state->index].endpoints.in.reports.nb != 0) {
       int ret = gusb_poll(state->usb_device, controller[state->type][state->index].endpoints.in.address);
       if (ret != -1) {
         state->ack = 0;
@@ -609,6 +679,17 @@ int usb_init(int usb_number, e_controller_type type) {
     return 0;
   }
 
+  if (gimx_params.debug.usb_con) {
+    fprintf(stderr, "Nacon r4: enumerating USB devices visible to GIMX\n");
+    struct gusb_device_info * devices = gusb_enumerate(0, 0);
+    struct gusb_device_info * dev;
+    for (dev = devices; dev != NULL; dev = dev->next) {
+      fprintf(stderr, "USB device %04x:%04x\n", dev->vendor_id, dev->product_id);
+    }
+    if (devices == NULL) fprintf(stderr, "USB enumeration returned no devices\n");
+    gusb_free_enumeration(devices);
+    fflush(stderr);
+  }
   unsigned int i;
   for (i = 0; i < sizeof(controller[0]) / sizeof(*controller[0]); ++i)
   {
@@ -616,7 +697,15 @@ int usb_init(int usb_number, e_controller_type type) {
     {
       break;
     }
+    if (gimx_params.debug.usb_con) {
+      fprintf(stderr, "Opening authentication device %04x:%04x\n", controller[type][i].ids.vendor, controller[type][i].ids.product);
+      fflush(stderr);
+    }
     state->usb_device = gusb_open_ids(controller[type][i].ids.vendor, controller[type][i].ids.product);
+    if (gimx_params.debug.usb_con) {
+      fprintf(stderr, "Authentication device open: %s\n", state->usb_device != NULL ? "OK" : "FAILED");
+      fflush(stderr);
+    }
 
     if (state->usb_device != NULL && type == C_TYPE_XONE_PAD) {
 
@@ -676,6 +765,15 @@ int usb_init(int usb_number, e_controller_type type) {
   if (ret < 0) {
     usb_close(usb_number);
     return -1;
+  }
+
+  /* Devices without input mappings only service endpoint-zero requests.
+   * Do not expose their incompatible input reports as a virtual DS4.
+   */
+  if (controller[state->type][state->index].endpoints.in.reports.nb == 0) {
+    ginfo("Using Nacon Wired Compact for experimental control-transfer authentication only.\n");
+    gwarn("Nacon PC/XInput mode detected; PlayStation authentication and PS5 compatibility are unverified.\n");
+    return 0;
   }
 
   ret = gusb_poll(state->usb_device, controller[state->type][state->index].endpoints.in.address);

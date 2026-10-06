@@ -28,7 +28,9 @@
 #include <haptic/haptic_core.h>
 
 #define DEFAULT_BAUDRATE 500000 //bps
-static const int baudrates[] = { 2000000, 1000000, DEFAULT_BAUDRATE }; //bps
+// Experimental Windows diagnostic: prefer the verified default speed.
+// Avoid closing/reopening the serial port for a performance-only speed change.
+static const int baudrates[] = { DEFAULT_BAUDRATE, 2000000, 1000000 }; //bps
 #define ADAPTER_TIMEOUT 1000 //millisecond
 /*
  * The adapter restarts about 15ms after receiving the reset command.
